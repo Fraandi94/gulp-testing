@@ -129,22 +129,55 @@ function clean(done) {
 
 
 
-gulp.task('styles', gulp.series(
-    clean,
-    styles
-));
+//linting
+gulp.task('linting:dev',
+    gulp.parallel(
+        lintingJS,
+        lintingStyl,
+        lintingPug
+    ),
+    function(done) {
+        done();
+    }
+);
+
+
+// rendering
+gulp.task('rendering:dev',
+    gulp.parallel(
+        scripts,
+        styles,
+        templatesPug
+    ),
+    function(done) {
+        done();
+    }
+);
+
 
 // default gulp task
-gulp.task('default',
-    gulp.series(clean,
-        gulp.parallel(
-            lintingJS,
-            lintingStyl,
-            lintingPug),
-        gulp.parallel(
-            scripts,
-            styles,
-            templatesPug
-        ),
+gulp.task('develop',
+    gulp.series(
+        clean,
+        'linting:dev',
+        'rendering:dev',
         watching
-));
+    ),
+    function(done) {
+        done();
+    }
+);
+
+
+/***
+ MAIN TASKS
+ ***/
+
+gulp.task('default',
+    gulp.series(
+        'develop'
+    ),
+    function(done) {
+        done();
+    }
+);
