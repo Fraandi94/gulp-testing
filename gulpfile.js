@@ -2,15 +2,24 @@ var gulp = require('gulp');
 
 // Include plugins
 var del = require('del');
+
+// js
 var jshint = require('gulp-jshint');
 var concat = require('gulp-concat');
 var uglify = require('gulp-uglify');
 var rename = require('gulp-rename');
+
+// css
 var stylus = require('gulp-stylus');
 var stylint = require('gulp-stylint');
 var sourcemaps = require('gulp-sourcemaps');
+var cleanCSS = require('gulp-clean-css');
+
 var cached = require('gulp-cached');
+
+// html
 var pug = require('gulp-pug');
+var pugLinter = require('gulp-pug-linter');
 
 
 var APP_FILES, STYL_FILES, BUILD, PUG_FILES;
@@ -35,18 +44,19 @@ BUILD = {
 };
 
 
-// Lint task for JS
+// Lint task for .js-files
 function lintingJS() {
-    return gulp.src(APP_FILES)
+    return gulp
+        .src(APP_FILES)
         .pipe(jshint())
         .pipe(jshint.reporter('default'));
 
 }
 
-
-// Concatenate & minify JS
+// Concatenate, uglify and & minify .js-files
 function scripts() {
-    return gulp.src(BUILD.source.js)
+    return gulp
+        .src(BUILD.source.js)
         //.pipe(sourcemaps.init())
         .pipe(concat('app.js'))
         .pipe(gulp.dest(BUILD.dirs.js))
@@ -58,22 +68,23 @@ function scripts() {
 }
 
 
-// render .styl to .css
+// render .styl to .css and minify css
 function styles() {
-    return gulp.src(BUILD.source.stylus)
+    return gulp
+        .src(BUILD.source.stylus)
         .pipe(sourcemaps.init())
         .pipe(stylus({
             compress: true
         }))
+        .pipe(cleanCSS())
         .pipe(sourcemaps.write('./map'))
         .pipe(gulp.dest(BUILD.dirs.css));
-        //.pipe(notify('Stylus was compiled succesfully'));
 }
 
-
-// lint task for .styl
+// lint task for .styl-files
 function lintingStyl() {
-    return gulp.src(STYL_FILES)
+    return gulp
+        .src(STYL_FILES)
         .pipe(cached(lintingStyl))
         .pipe(stylint({
             config: './.stylintrc'
@@ -82,7 +93,7 @@ function lintingStyl() {
 }
 
 
-// render .pug to .html
+// render .jade to .html
 /*function templates() {
     return gulp.src('./app/statics/*.jade')
         .pipe(jade({
@@ -94,11 +105,20 @@ function lintingStyl() {
 
 // render .pug to .html
 function templatesPug() {
-    return gulp.src(BUILD.source.pug)
+    return gulp
+        .src(BUILD.source.pug)
         .pipe(pug({
             pretty: true
         }))
         .pipe(gulp.dest(BUILD.dirs.html));
+}
+
+// lint task for .pug-files
+function lintingPug() {
+    return gulp
+        .src('./build/html/*.html')
+        .pipe(pugLinter())
+        .pipe(pugLinter.reporter('fail'));
 }
 
 
@@ -126,7 +146,11 @@ gulp.task('styles', gulp.series(
 
 // default gulp task
 gulp.task('default',
-    gulp.series(clean, lintingJS, lintingStyl,
+    gulp.series(clean,
+        gulp.parallel(
+            lintingJS,
+            lintingStyl,
+            lintingPug),
         gulp.parallel(
             scripts,
             styles,
