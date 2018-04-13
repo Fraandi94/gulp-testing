@@ -93,16 +93,6 @@ function lintingStyl() {
 }
 
 
-// render .jade to .html
-/*function templates() {
-    return gulp.src('./app/statics/*.jade')
-        .pipe(jade({
-            pretty: true
-        }))
-        .pipe(gulp.dest(BUILD.dirs.html));
-};*/
-
-
 // render .pug to .html
 function templatesPug() {
     return gulp
@@ -126,7 +116,7 @@ function lintingPug() {
 function watching() {
     gulp.watch(BUILD.source.js, gulp.series(lintingJS, scripts));
     gulp.watch(STYL_FILES, gulp.series(lintingStyl, styles));
-    gulp.watch(PUG_FILES, gulp.series(templatesPug));
+    gulp.watch(PUG_FILES, gulp.series(lintingPug, templatesPug));
 
 }
 
