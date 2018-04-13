@@ -14,6 +14,7 @@ var nib = require('nib');
 var gutil = require('gulp-util');
 var Promise = require('promise');
 var jade = require('gulp-jade');
+var pug = require('gulp-pug')
 
 
 // Lint task
@@ -57,6 +58,14 @@ function templates() {
         .pipe(gulp.dest('./build/html'))
 };
 
+// render .jade to .html
+function templatesPug() {
+    return gulp.src('./app/statics/*.pug')
+        .pipe(pug({
+            pretty: true
+        }))
+        .pipe(gulp.dest('./build/html'))
+};
 
 // Watch files for changes
 function watching() {
@@ -81,11 +90,13 @@ gulp.task('styles', gulp.series(
 ));
 
 // default gulp task
-gulp.task('default', gulp.series(
-    clean,
-    linting,
-    scripts,
-    styles,
-    templates,
-    watching
+gulp.task('default',
+    gulp.series(clean, linting,
+        gulp.parallel(
+            scripts,
+            styles,
+            //templates,
+            templatesPug
+        ),
+        watching
 ));
