@@ -1,7 +1,10 @@
 var gulp = require('gulp');
 
-// Include plugins
+/***
+ * Include plugins
+***/
 var del = require('del');
+var cached = require('gulp-cached');
 
 // js
 var jshint = require('gulp-jshint');
@@ -15,13 +18,12 @@ var stylint = require('gulp-stylint');
 var sourcemaps = require('gulp-sourcemaps');
 var cleanCSS = require('gulp-clean-css');
 
-var cached = require('gulp-cached');
-
 // html
 var pug = require('gulp-pug');
 var pugLinter = require('gulp-pug-linter');
 
 
+// necessary paths
 var APP_FILES, STYL_FILES, BUILD, PUG_FILES;
 
 APP_FILES = "./app/**/*.js";
@@ -44,40 +46,58 @@ BUILD = {
 };
 
 
+/***
+* gulp functions
+***/
 // Lint task for .js-files
 function lintingJS() {
     return gulp
         .src(APP_FILES)
+        .pipe(cached(lintingJS))
         .pipe(jshint())
         .pipe(jshint.reporter('default'));
-
 }
 
-// Concatenate, uglify and & minify .js-files
-function scripts() {
+// JS for development: concatenate, uglify and & minify .js-files
+function scriptsDev() {
     return gulp
         .src(BUILD.source.js)
-        //.pipe(sourcemaps.init())
+        .pipe(sourcemaps.init())
         .pipe(concat('app.js'))
+        .pipe(sourcemaps.write('./map'))
         .pipe(gulp.dest(BUILD.dirs.js))
-        .pipe(rename('all.min.js'))
-        //.pipe(sourcemaps.write('./map'))
-        .pipe(uglify()) //{compress: true}
-        .pipe(gulp.dest(BUILD.dirs.js));
+}
 
+// JS for production: concatenate, uglify and & minify .js-files
+function scriptsProd() {
+    return gulp
+        .src(BUILD.source.js)
+        .pipe(concat('app.js'))
+        .pipe(uglify({"compress": true})) //{compress: true}
+        .pipe(gulp.dest(BUILD.dirs.js));
 }
 
 
-// render .styl to .css and minify css
-function styles() {
+// styl for development: render .styl to .css
+function stylesDev() {
     return gulp
         .src(BUILD.source.stylus)
         .pipe(sourcemaps.init())
         .pipe(stylus({
             compress: true
         }))
-        .pipe(cleanCSS())
         .pipe(sourcemaps.write('./map'))
+        .pipe(gulp.dest(BUILD.dirs.css));
+}
+
+// styl for production: render .styl to .css
+function stylesProd() {
+    return gulp
+        .src(BUILD.source.stylus)
+        .pipe(stylus({
+            compress: true
+        }))
+        .pipe(cleanCSS())
         .pipe(gulp.dest(BUILD.dirs.css));
 }
 
@@ -106,7 +126,8 @@ function templatesPug() {
 // lint task for .pug-files
 function lintingPug() {
     return gulp
-        .src('./build/html/*.html')
+        .src(PUG_FILES)
+        .pipe(cached(lintingPug))
         .pipe(pugLinter())
         .pipe(pugLinter.reporter('fail'));
 }
@@ -114,10 +135,9 @@ function lintingPug() {
 
 // Watch files for changes
 function watching() {
-    gulp.watch(BUILD.source.js, gulp.series(lintingJS, scripts));
-    gulp.watch(STYL_FILES, gulp.series(lintingStyl, styles));
+    gulp.watch(BUILD.source.js, gulp.series(lintingJS, scriptsDev));
+    gulp.watch(STYL_FILES, gulp.series(lintingStyl, stylesDev));
     gulp.watch(PUG_FILES, gulp.series(lintingPug, templatesPug));
-
 }
 
 
@@ -130,7 +150,7 @@ function clean(done) {
 
 
 //linting
-gulp.task('linting:dev',
+gulp.task('linting',
     gulp.parallel(
         lintingJS,
         lintingStyl,
@@ -141,12 +161,23 @@ gulp.task('linting:dev',
     }
 );
 
-
-// rendering
+// rendering development
 gulp.task('rendering:dev',
     gulp.parallel(
-        scripts,
-        styles,
+        scriptsDev,
+        stylesDev,
+        templatesPug
+    ),
+    function(done) {
+        done();
+    }
+);
+
+// rendering production
+gulp.task('rendering:prod',
+    gulp.parallel(
+        scriptsProd,
+        stylesProd,
         templatesPug
     ),
     function(done) {
@@ -155,13 +186,25 @@ gulp.task('rendering:dev',
 );
 
 
-// default gulp task
+// gulp chain for development
 gulp.task('develop',
     gulp.series(
         clean,
-        'linting:dev',
+        'linting',
         'rendering:dev',
         watching
+    ),
+    function(done) {
+        done();
+    }
+);
+
+// gulp chain for production
+gulp.task('production',
+    gulp.series(
+        clean,
+        'linting',
+        'rendering:prod'
     ),
     function(done) {
         done();
@@ -173,9 +216,30 @@ gulp.task('develop',
  MAIN TASKS
  ***/
 
+// development task
 gulp.task('default',
     gulp.series(
         'develop'
+    ),
+    function(done) {
+        done();
+    }
+);
+
+// short for development task
+gulp.task('dev',
+    gulp.series(
+        'develop'
+    ),
+    function(done) {
+        done();
+    }
+);
+
+// production task
+gulp.task('prod',
+    gulp.series(
+        'production'
     ),
     function(done) {
         done();
