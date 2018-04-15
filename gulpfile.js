@@ -22,6 +22,9 @@ var cleanCSS = require('gulp-clean-css');
 var pug = require('gulp-pug');
 var pugLinter = require('gulp-pug-linter');
 
+// browsersync
+var browserSync = require('browser-sync').create();
+var reload = browserSync.reload;
 
 // necessary paths
 var APP_FILES, STYL_FILES, BUILD, PUG_FILES;
@@ -148,6 +151,9 @@ function clean(done) {
 }
 
 
+/***
+ * gulp tasks
+***/
 
 //linting
 gulp.task('linting',
@@ -161,8 +167,8 @@ gulp.task('linting',
     }
 );
 
-// rendering development
-gulp.task('rendering:dev',
+// build development
+gulp.task('build:dev',
     gulp.parallel(
         scriptsDev,
         stylesDev,
@@ -173,8 +179,8 @@ gulp.task('rendering:dev',
     }
 );
 
-// rendering production
-gulp.task('rendering:prod',
+// build production
+gulp.task('build:prod',
     gulp.parallel(
         scriptsProd,
         stylesProd,
@@ -191,7 +197,7 @@ gulp.task('develop',
     gulp.series(
         clean,
         'linting',
-        'rendering:dev',
+        'build:dev',
         watching
     ),
     function(done) {
@@ -204,10 +210,26 @@ gulp.task('production',
     gulp.series(
         clean,
         'linting',
-        'rendering:prod'
+        'build:prod'
     ),
     function(done) {
         done();
+    }
+);
+
+
+// browser-sync server
+gulp.task("run",
+    gulp.series(
+        'develop'
+    ),
+    function() {
+        return browserSync.init({
+            server: {
+                baseDir: BUILD.dirs.out,
+                index: "/html/master.html"
+            }
+        });
     }
 );
 
